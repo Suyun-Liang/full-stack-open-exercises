@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import Filter from "./Filter";
 import PersonForm from "./PersonForm";
 import Persons from "./Persons";
-import axios from "axios";
+import personService from "./services/persons";
 
 function App() {
   const [persons, setPersons] = useState([]);
@@ -16,21 +16,55 @@ function App() {
     return result;
   }, []);
 
+  function resetAllForm() {
+    setNewName("");
+    setNewNumber("");
+  }
+
   useEffect(() => {
-    axios.get("http://localhost:3001/persons").then((res) => {
-      setPersons(res.data);
+    personService.getAll().then((initialData) => {
+      setPersons(initialData);
     });
   }, []);
 
   function handleSubmit(e) {
     e.preventDefault();
-    if (isNameExist(newName, persons)) {
-      window.alert(`${newName} is already added to phonebook`);
+
+    const newPerson = { name: newName, number: newNumber };
+    const existingPerson = persons.find((p) => p.name === newName);
+
+    if (existingPerson) {
+      const shouldUpdate = window.confirm(
+        `${newName} is already added to phonebook, replace the old number with the new one?`,
+      );
+      if (!shouldUpdate) return resetAllForm();
+
+      personService
+        .update(existingPerson.id, newPerson)
+        .then((returnedPerson) => {
+          setPersons(
+            persons.map((person) =>
+              person.id === returnedPerson.id ? returnedPerson : person,
+            ),
+          );
+        });
     } else {
-      setPersons([...persons, { name: newName, number: newNumber }]);
+      personService.create(newPerson).then((returnedPerson) => {
+        setPersons([...persons, returnedPerson]);
+      });
     }
-    setNewName("");
-    setNewNumber("");
+
+    resetAllForm();
+  }
+
+  function handleDeletePerson(id) {
+    const deletePerson = persons.find((p) => p.id === id);
+    if (!window.confirm(`Delete ${deletePerson.name}`)) return;
+
+    personService.deletePerson(id).then((deletedPerson) => {
+      const newPersons = persons.filter((p) => p.id !== deletedPerson.id);
+      setPersons(newPersons);
+    });
   }
 
   return (
@@ -40,7 +74,7 @@ function App() {
         value={filterInput}
         onChange={(e) => setFilterInput(e.target.value)}
       />
-      <h2>add a new</h2>
+      <h3>add a new</h3>
       <PersonForm
         onSubmit={handleSubmit}
         nameVal={newName}
@@ -48,24 +82,10 @@ function App() {
         numberVal={newNumber}
         onChangeNumber={(e) => setNewNumber(e.target.value)}
       />
-      {/* <div>debug: {newName}</div>
-      <div>debug: {newNumber}</div>
-      <div>debug: {filterInput}</div> */}
-      <h2>Numbers</h2>
-      <Persons persons={filteredPersons} />
+      <h3>Numbers</h3>
+      <Persons persons={filteredPersons} onDelete={handleDeletePerson} />
     </div>
   );
 }
 
 export default App;
-
-function isNameExist(name, arr) {
-  let result = false;
-  arr.forEach((e) => {
-    if (e.name === name) {
-      result = true;
-      return;
-    }
-  });
-  return result;
-}
