@@ -22,13 +22,18 @@
     },
     {
       "name": "Liang Suyun",
-      "number": "000099",
+      "number": "890890",
       "id": "5_5mSR1fnxg"
     },
     {
       "name": "Mykyta PisKarov",
-      "number": "234567890",
+      "number": "000099",
       "id": "KVhj0GHiXsI"
+    },
+    {
+      "name": "fdsa",
+      "number": "dsadsa",
+      "id": "Hm0si_1jNkw"
     }
   ],
   "$schema": "./node_modules/json-server/schema.json"
