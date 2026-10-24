@@ -90,8 +90,9 @@ function App() {
 
     personService
       .deletePerson(id)
-      .then((deletedPerson) => {
-        const newPersons = persons.filter((p) => p.id !== deletedPerson.id);
+      .then(() => {
+        const newPersons = persons.filter((p) => p.id !== deletePerson.id);
+        console.log({ newPersonsAfterDelete: newPersons });
         setPersons(newPersons);
       })
       .catch((err) => {
