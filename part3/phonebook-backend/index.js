@@ -78,7 +78,7 @@ app.post("/api/persons", (req, res) => {
   res.json(person);
 });
 
-app.delete("/api/person/:id", (req, res) => {
+app.delete("/api/persons/:id", (req, res) => {
   const id = req.params.id;
   persons = persons.filter((p) => p.id !== id);
   res.status(204).end();
@@ -95,5 +95,5 @@ app.listen(PORT, () => {
 });
 
 function getRandomId() {
-  return Math.floor(Math.random() * 100000).toString;
+  return Math.floor(Math.random() * 100000).toString();
 }
