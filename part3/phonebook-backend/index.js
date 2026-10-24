@@ -9,6 +9,7 @@ morgan.token("body", (req, res) => {
 
 app.use(express.json()); // for parsing application/json
 app.use(express.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencoded
+app.use(express.static("dist"));
 app.use(
   morgan(":method :url :status :res[content-length] - :response-time ms :body"),
 );
@@ -35,10 +36,6 @@ let persons = [
     number: "39-23-6423122",
   },
 ];
-
-app.get("/", (req, res) => {
-  res.send("<h1>HELL</h1>");
-});
 
 app.get("/api/persons", (req, res) => {
   res.json(persons);
