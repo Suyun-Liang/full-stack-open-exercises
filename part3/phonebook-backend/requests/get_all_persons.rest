@@ -5,6 +5,15 @@ POST http://localhost:3001/api/persons
 Content-Type: application/json
 
 {
-    "name":"Amanda Liang", 
-    "number":"16033211"
+    "name": "Poppendieck",
+    "number": "39-23-6423122"
+}
+
+###
+PUT http://localhost:3001/api/persons/6ade5ec78bf6e58cebf52695
+Content-Type: application/json
+
+{
+    "name":"xieyou",
+    "number": "19980"
 }
