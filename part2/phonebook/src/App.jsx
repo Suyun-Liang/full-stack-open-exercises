@@ -22,7 +22,6 @@ function App() {
   function resetAllForm() {
     setNewName("");
     setNewNumber("");
-    setNotification(null);
   }
 
   useEffect(() => {
@@ -35,7 +34,7 @@ function App() {
     if (!notification?.text) return;
     window.setTimeout(() => {
       setNotification(null);
-    }, 2000);
+    }, 3000);
   }, [notification?.text]);
 
   function handleSubmit(e) {
@@ -63,22 +62,24 @@ function App() {
             text: `Changed ${returnedPerson.name}'s number`,
           });
         })
-        .catch((err) => {
-          if (err.status === 404) {
-            setNotification({
-              type: "error",
-              text: `Information of ${existingPerson.name} has already been removed from the server`,
-            });
-          }
+        .catch((error) => {
+          console.log(error.response.data.error);
+          setNotification({ type: "error", text: error.response.data.error });
         });
     } else {
-      personService.create(newPerson).then((returnedPerson) => {
-        setPersons([...persons, returnedPerson]);
-        setNotification({
-          type: "success",
-          text: `Added ${returnedPerson.name}`,
+      personService
+        .create(newPerson)
+        .then((returnedPerson) => {
+          setPersons([...persons, returnedPerson]);
+          setNotification({
+            type: "success",
+            text: `Added ${returnedPerson.name}`,
+          });
+        })
+        .catch((error) => {
+          console.log(error.response.data.error);
+          setNotification({ type: "error", text: error.response.data.error });
         });
-      });
     }
 
     resetAllForm();
@@ -92,7 +93,6 @@ function App() {
       .deletePerson(id)
       .then(() => {
         const newPersons = persons.filter((p) => p.id !== deletePerson.id);
-        console.log({ newPersonsAfterDelete: newPersons });
         setPersons(newPersons);
       })
       .catch((err) => {
