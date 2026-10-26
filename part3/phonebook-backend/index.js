@@ -4,7 +4,7 @@ const app = express();
 const morgan = require("morgan");
 const PORT = process.env.PORT;
 const Person = require("./models/person");
-morgan.token("body", (req, res) => {
+morgan.token("body", (req) => {
   return req.method === "POST" ? JSON.stringify(req.body) : "";
 });
 
@@ -112,7 +112,3 @@ app.use(errorHandler);
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-
-function getRandomId() {
-  return Math.floor(Math.random() * 100000).toString();
-}
