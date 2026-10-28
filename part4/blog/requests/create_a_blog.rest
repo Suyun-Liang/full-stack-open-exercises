@@ -1,0 +1,8 @@
+POST http://localhost:3003/api/blogs
+Content-Type: application/json
+
+{   "title": "ttssssssttt",
+    "author": "Edsger W. Dijkstra",
+    "url": "https://homepages.cwi.nl/~storm/teaching/reader/Dijkstra68.pdf",
+    "likes": 5
+}
