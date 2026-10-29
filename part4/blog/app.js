@@ -4,6 +4,7 @@ const morgan = require("morgan");
 const blogRouter = require("./controller/blogs");
 const logger = require("./utility/logger");
 const config = require("./utility/config");
+const middleware = require("./utility/middleware");
 const app = express();
 morgan.token("body", (req) => JSON.stringify(req.body));
 
@@ -23,5 +24,8 @@ app.use(
 );
 
 app.use("/api/blogs", blogRouter);
+
+app.use(middleware.unknownEndpoint);
+app.use(middleware.errorHandler);
 
 module.exports = app;
