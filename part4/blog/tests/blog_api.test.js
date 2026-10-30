@@ -56,22 +56,22 @@ test("a valid blog can be added", async () => {
   assert(titles.includes(newBlog.title));
 });
 
-test("creating a blog with missing likes will be default to 0 likes", async () => {
-  const newBlog = {
-    title: "belloooo",
-    author: "Edsger W. Dijkstra",
-    url: "https://homepages.cwi.nl/~storm/teaching/reader/Dijkstra68.pdf",
-  };
-
-  const res = await api
-    .post("/api/blogs")
-    .send(newBlog)
-    .expect(201)
-    .expect("Content-Type", /application\/json/);
-  assert.strictEqual(res.body.likes, 0);
-});
-
 describe("creating a blog with missing properties", () => {
+  test("without likes will be default to 0 likes", async () => {
+    const newBlog = {
+      title: "belloooo",
+      author: "Edsger W. Dijkstra",
+      url: "https://homepages.cwi.nl/~storm/teaching/reader/Dijkstra68.pdf",
+    };
+
+    const res = await api
+      .post("/api/blogs")
+      .send(newBlog)
+      .expect(201)
+      .expect("Content-Type", /application\/json/);
+    assert.strictEqual(res.body.likes, 0);
+  });
+
   test("without title returns 400", async () => {
     const newBlog = {
       author: "Edsger W. Dijkstra",
@@ -88,6 +88,42 @@ describe("creating a blog with missing properties", () => {
     };
 
     await api.post("/api/blogs").send(newBlog).expect(400);
+  });
+});
+
+describe("deleting a blog", () => {
+  test("succeeds with status code 204 if id is valid", async () => {
+    const blogsAtStart = await listHelper.blogsInDB();
+    const blogToDelete = blogsAtStart[0];
+
+    await api.delete(`/api/blogs/${blogToDelete.id}`).expect(204);
+
+    const blogsAtEnd = await listHelper.blogsInDB();
+
+    const ids = blogsAtEnd.map((b) => b.id);
+    assert(!ids.includes(blogToDelete.id));
+
+    assert.strictEqual(
+      blogsAtEnd.length,
+      listHelper.listWithManyBlogs.length - 1,
+    );
+  });
+});
+
+describe("updating a blog", () => {
+  test("valid update can be update, if id is valid", async () => {
+    const updateField = {
+      likes: 5,
+    };
+    const blogsAtStart = await listHelper.blogsInDB();
+    const blogToUpdate = blogsAtStart[0];
+    const response = await api
+      .put(`/api/blogs/${blogToUpdate.id}`)
+      .send(updateField)
+      .expect(200)
+      .expect("Content-Type", /application\/json/);
+
+    assert.strictEqual(response.body.likes, updateField.likes);
   });
 });
 
