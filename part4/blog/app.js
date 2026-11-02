@@ -7,6 +7,7 @@ const config = require("./utility/config");
 const middleware = require("./utility/middleware");
 const app = express();
 morgan.token("body", (req) => JSON.stringify(req.body));
+const userRouter = require("./controller/users");
 
 mongoose
   .connect(config.MONGODB_URI, { family: 4 })
@@ -24,6 +25,7 @@ app.use(
 );
 
 app.use("/api/blogs", blogRouter);
+app.use("/api/users", userRouter);
 
 app.use(middleware.unknownEndpoint);
 app.use(middleware.errorHandler);
