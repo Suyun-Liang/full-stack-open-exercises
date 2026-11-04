@@ -1,5 +1,6 @@
 const Blog = require("../models/blog");
 const User = require("../models/user");
+const middleware = require("../utility/middleware");
 
 const blogRouter = require("express").Router();
 blogRouter.get("/", async (request, response) => {
@@ -20,8 +21,9 @@ blogRouter.get("/:id", async (request, response) => {
   }
 });
 
-blogRouter.post("/", async (request, response) => {
-  const user = await User.findOne({});
+blogRouter.post("/", middleware.userExtractor, async (request, response) => {
+  const user = request.user;
+
   const blog = new Blog({ ...request.body, user: user._id });
 
   const result = await blog.save();
@@ -30,24 +32,55 @@ blogRouter.post("/", async (request, response) => {
   response.status(201).json(result);
 });
 
-blogRouter.delete("/:id", async (request, response) => {
-  await Blog.findByIdAndDelete(request.params.id);
-  response.status(204).end();
-});
+blogRouter.delete(
+  "/:id",
+  middleware.userExtractor,
+  async (request, response) => {
+    const user = request.user;
 
-blogRouter.put("/:id", async (request, response) => {
-  const body = request.body;
-  const blog = await Blog.findById(request.params.id);
-
-  if (blog) {
-    for (const key in body) {
-      if (Object.hasOwn(blog.toObject(), key)) blog[key] = body[key];
+    const blog = await Blog.findById(request.params.id);
+    if (!blog) {
+      return response.status(404).json({
+        error: "Blog not found",
+      });
     }
-    const updatedBlog = await blog.save();
-    response.json(updatedBlog);
-  } else {
-    response.status(404).end();
+
+    const authorizedUser = blog.user?.toString() === user.id;
+    if (!authorizedUser) {
+      return response
+        .status(403)
+        .json({ error: "Not authorized to delete this blog" });
+    }
+
+    await Blog.findByIdAndDelete(request.params.id);
+    await User.findByIdAndUpdate(blog.user, { $pull: { blogs: blog._id } });
+    response.status(204).end();
+  },
+);
+
+blogRouter.put("/:id", middleware.userExtractor, async (request, response) => {
+  const user = request.user;
+  const body = request.body;
+
+  const blog = await Blog.findById(request.params.id);
+  if (!blog) {
+    response.status(404).json({
+      error: "Blog not found",
+    });
   }
+
+  const authorizedUser = blog.user?.toString() === user.id;
+  if (!authorizedUser) {
+    return response
+      .status(403)
+      .json({ error: "Not authorized to delete this blog" });
+  }
+
+  for (const key in body) {
+    if (Object.hasOwn(blog.toObject(), key)) blog[key] = body[key];
+  }
+  const updatedBlog = await blog.save();
+  response.json(updatedBlog);
 });
 
 module.exports = blogRouter;

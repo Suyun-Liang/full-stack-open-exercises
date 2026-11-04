@@ -1,7 +1,8 @@
 POST http://localhost:3003/api/blogs
 Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhZWE1OTI1NDNhNTAwOGMwOTMyYzkzNCIsInVzZXJuYW1lIjoiYW1hbmRhIiwiaWF0IjoxNzkzODIxODY0fQ.QoNv40A98jXak0Ze4WZtShKBuximY3G2Xw5Am5MMDwk
 
-{   "title": "testtsts",
+{   "title": "amanda!",
     "author": "piggy",
     "url": "https://homepages.cwi.nl/~storm/teaching/reader/Dijkstra68.pdf",
     "likes": 5

@@ -57,6 +57,7 @@ describe("GET /api/blogs/:id", () => {
 
 describe("POST /api/blogs", () => {
   test("creates a blog with valid data", async () => {
+    const postsAtStart = await testHelper.blogsInDB();
     const newBlog = {
       title: "ttssssssttt",
       author: "Edsger W. Dijkstra",
@@ -67,7 +68,7 @@ describe("POST /api/blogs", () => {
     await api.post("/api/blogs").send(newBlog).expect(201);
 
     const postsAtEnd = await testHelper.blogsInDB();
-    assert.strictEqual(postsAtEnd.length, testHelper.initialBlogs.length + 1);
+    assert.strictEqual(postsAtEnd.length, postsAtStart.length + 1);
 
     const titles = postsAtEnd.map((post) => post.title);
     assert(titles.includes(newBlog.title));
