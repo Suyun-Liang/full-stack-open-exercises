@@ -17,15 +17,6 @@ beforeEach(async () => {
     passwordHash,
   });
   await user.save();
-  // const users = [
-  //   {
-  //     username: "root",
-  //     name: "Amanda",
-  //     passwordHash,
-  //   },
-  //   { username: "root2", name: "Hello", passwordHash },
-  // ];
-  // await User.insertMany(users);
 });
 
 describe("POST /api/users/", () => {

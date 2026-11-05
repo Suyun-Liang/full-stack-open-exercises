@@ -4,13 +4,39 @@ const supertest = require("supertest");
 const mongoose = require("mongoose");
 const testHelper = require("../utility/test_helper");
 const Blog = require("../models/blog");
+const User = require("../models/user");
 const app = require("../app");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 
 const api = supertest(app);
+let token;
 
 beforeEach(async () => {
   await Blog.deleteMany({});
-  await Blog.insertMany(testHelper.initialBlogs);
+  await User.deleteMany({});
+
+  const passwordHash = await bcrypt.hash("secrete", 10);
+  const user = new User({
+    username: "root",
+    name: "Amanda",
+    passwordHash,
+  });
+  await user.save();
+
+  token = jwt.sign(
+    { username: user.username, id: user._id },
+    process.env.SECRET,
+  );
+
+  const blogs = testHelper.initialBlogs.map((blog) => ({
+    ...blog,
+    user: user._id,
+  }));
+  const savedBlogs = await Blog.insertMany(blogs);
+
+  user.blogs = savedBlogs.map((blog) => blog._id);
+  await user.save();
 });
 
 describe("GET /api/blogs", () => {
@@ -65,15 +91,46 @@ describe("POST /api/blogs", () => {
       likes: 5,
     };
 
-    await api.post("/api/blogs").send(newBlog).expect(201);
+    await api
+      .post("/api/blogs")
+      .set("Authorization", `Bearer ${token}`)
+      .send(newBlog)
+      .expect(201);
 
     const postsAtEnd = await testHelper.blogsInDB();
     assert.strictEqual(postsAtEnd.length, postsAtStart.length + 1);
 
     const titles = postsAtEnd.map((post) => post.title);
     assert(titles.includes(newBlog.title));
+
+    // blog is added in user.blogs as well
+    const userAtEnd = await User.findOne({ username: "root" });
+    const createdBlog = postsAtEnd.find((blog) => blog.title === newBlog.title);
+    assert(userAtEnd.blogs.some((id) => id.toString() === createdBlog.id));
   });
   describe("when required properties are missing", () => {
+    test("returns 401 when token is missing", async () => {
+      const newBlog = {
+        title: "Test blog",
+        url: "https://example.com",
+      };
+
+      await api.post("/api/blogs").send(newBlog).expect(401);
+    });
+
+    test("returns 401 when token is invalid", async () => {
+      const newBlog = {
+        title: "Test blog",
+        url: "https://example.com",
+      };
+
+      await api
+        .post("/api/blogs")
+        .set("Authorization", "Bearer invalid-token")
+        .send(newBlog)
+        .expect(401);
+    });
+
     test("defaults likes to 0 when omitted", async () => {
       const newBlog = {
         title: "belloooo",
@@ -83,6 +140,7 @@ describe("POST /api/blogs", () => {
 
       const res = await api
         .post("/api/blogs")
+        .set("Authorization", `Bearer ${token}`)
         .send(newBlog)
         .expect(201)
         .expect("Content-Type", /application\/json/);
@@ -95,7 +153,11 @@ describe("POST /api/blogs", () => {
         url: "https://homepages.cwi.nl/~storm/teaching/reader/Dijkstra68.pdf",
       };
 
-      await api.post("/api/blogs").send(newBlog).expect(400);
+      await api
+        .post("/api/blogs")
+        .set("Authorization", `Bearer ${token}`)
+        .send(newBlog)
+        .expect(400);
     });
 
     test("returns 400 when url is missing", async () => {
@@ -104,7 +166,11 @@ describe("POST /api/blogs", () => {
         author: "Edsger W. Dijkstra",
       };
 
-      await api.post("/api/blogs").send(newBlog).expect(400);
+      await api
+        .post("/api/blogs")
+        .set("Authorization", `Bearer ${token}`)
+        .send(newBlog)
+        .expect(400);
     });
   });
 });
@@ -114,7 +180,10 @@ describe("DELETE /api/blogs/:id", () => {
     const blogsAtStart = await testHelper.blogsInDB();
     const blogToDelete = blogsAtStart[0];
 
-    await api.delete(`/api/blogs/${blogToDelete.id}`).expect(204);
+    await api
+      .delete(`/api/blogs/${blogToDelete.id}`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(204);
 
     const blogsAtEnd = await testHelper.blogsInDB();
 
@@ -122,6 +191,43 @@ describe("DELETE /api/blogs/:id", () => {
     assert(!ids.includes(blogToDelete.id));
 
     assert.strictEqual(blogsAtEnd.length, testHelper.initialBlogs.length - 1);
+
+    // blog in user.blogs also being deleted
+    const userAtEnd = await User.findOne({ username: "root" });
+    assert(!userAtEnd.blogs.some((id) => id.toString() === blogToDelete.id));
+  });
+
+  test("returns 401 when token is missing", async () => {
+    const blogsAtStart = await testHelper.blogsInDB();
+
+    await api.delete(`/api/blogs/${blogsAtStart[0].id}`).expect(401);
+  });
+
+  test("cannot delete a blog owned by another user", async () => {
+    const blogsAtStart = await testHelper.blogsInDB();
+
+    // 1. Create another user
+    const passwordHash = await bcrypt.hash("secrete", 10);
+    const newUser = new User({
+      username: "fake",
+      name: "Amanda",
+      passwordHash,
+    });
+    await newUser.save();
+    // 2. Generate a valid token for that user
+    const otherToken = jwt.sign(
+      { username: newUser.username, id: newUser._id },
+      process.env.SECRET,
+    );
+    // 3. Try to delete a blog owned by root, Expect 403
+    await api
+      .delete(`/api/blogs/${blogsAtStart[0].id}`)
+      .set("Authorization", `Bearer ${otherToken}`)
+      .expect(403);
+    // 4. Verify the blog still exists in the database
+    const blogsAtEnd = await testHelper.blogsInDB();
+
+    assert.deepStrictEqual(blogsAtStart, blogsAtEnd);
   });
 });
 
@@ -135,6 +241,7 @@ describe("PUT /api/blogs/:id", () => {
     const response = await api
       .put(`/api/blogs/${blogToUpdate.id}`)
       .send(updateField)
+      .set("Authorization", `Bearer ${token}`)
       .expect(200)
       .expect("Content-Type", /application\/json/);
 
@@ -144,6 +251,52 @@ describe("PUT /api/blogs/:id", () => {
     const updatedBlog = blogAtEnd.find((b) => b.id === blogToUpdate.id);
 
     assert.strictEqual(updatedBlog.likes, updateField.likes);
+  });
+
+  test("returns 401 when token is missing", async () => {
+    const blogsAtStart = await testHelper.blogsInDB();
+    const blogToUpdate = blogsAtStart[0];
+    const updateField = {
+      likes: blogToUpdate.likes + 1,
+    };
+
+    await api
+      .put(`/api/blogs/${blogToUpdate.id}`)
+      .send(updateField)
+      .expect(401);
+  });
+
+  test("cannot update a blog owned by another user", async () => {
+    const blogsAtStart = await testHelper.blogsInDB();
+    const blogToUpdate = blogsAtStart[0];
+    const updateField = {
+      likes: blogToUpdate.likes + 1,
+    };
+
+    // 1. Create another user
+    const passwordHash = await bcrypt.hash("secrete", 10);
+    const newUser = new User({
+      username: "fake",
+      name: "Amanda",
+      passwordHash,
+    });
+    await newUser.save();
+    // 2. Generate a valid token for that user
+    const otherToken = jwt.sign(
+      { username: newUser.username, id: newUser._id },
+      process.env.SECRET,
+    );
+    // 3. Try to delete a blog owned by root, Expect 403
+    await api
+      .put(`/api/blogs/${blogToUpdate.id}`)
+      .set("Authorization", `Bearer ${otherToken}`)
+      .send(updateField)
+      .expect(403);
+
+    // 4. Verify the blog remains unchanged in the database
+    const blogsAtEnd = await testHelper.blogsInDB();
+
+    assert.deepStrictEqual(blogsAtStart, blogsAtEnd);
   });
 });
 
