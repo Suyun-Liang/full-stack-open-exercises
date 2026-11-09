@@ -60,26 +60,41 @@ blogRouter.delete(
 
 blogRouter.put("/:id", middleware.userExtractor, async (request, response) => {
   const user = request.user;
-  const body = request.body;
+  const { title, author, url, likes } = request.body;
 
   const blog = await Blog.findById(request.params.id);
+
   if (!blog) {
-    response.status(404).json({
+    return response.status(404).json({
       error: "Blog not found",
     });
   }
 
-  const authorizedUser = blog.user?.toString() === user.id;
-  if (!authorizedUser) {
-    return response
-      .status(403)
-      .json({ error: "Not authorized to delete this blog" });
+  if (blog.user?.toString() !== user.id) {
+    return response.status(403).json({
+      error: "Not authorized to update this blog",
+    });
   }
 
-  for (const key in body) {
-    if (Object.hasOwn(blog.toObject(), key)) blog[key] = body[key];
+  if (
+    typeof title !== "string" ||
+    typeof author !== "string" ||
+    typeof url !== "string" ||
+    !Number.isInteger(likes) ||
+    likes < 0
+  ) {
+    return response.status(400).json({
+      error: "Invalid blog data",
+    });
   }
+
+  blog.title = title;
+  blog.author = author;
+  blog.url = url;
+  blog.likes = likes;
+
   const updatedBlog = await blog.save();
+
   response.json(updatedBlog);
 });
 
