@@ -5,6 +5,7 @@ import Notification from "./components/Notification";
 import LoginForm from "./components/LoginForm";
 import BlogForm from "./components/BlogForm";
 import Blogs from "./components/Blogs";
+import Togglable from "./components/Togglable";
 
 function App() {
   const [blogs, setBlogs] = useState([]);
@@ -87,6 +88,29 @@ function App() {
     }
   }
 
+  async function handleLike(blog) {
+    try {
+      const updateBlog = {
+        title: blog.title,
+        author: blog.author,
+        url: blog.url,
+        likes: blog.likes + 1,
+        user: user?.id,
+      };
+
+      await blogService.update(blog.id, updateBlog);
+      const newBlogs = await blogService.getAll();
+      setBlogs(newBlogs);
+    } catch (error) {
+      console.log(error.response);
+      setNotification({
+        type: "error",
+        message: error.response?.data?.error || "update Like failed",
+      });
+      throw error;
+    }
+  }
+
   if (!user) {
     return (
       <div>
@@ -106,10 +130,12 @@ function App() {
       </p>
       <div>
         <h2>create new</h2>
-        <BlogForm onCreateBlog={handleCreateBlog} />
+        <Togglable buttonLabel="create new blog">
+          <BlogForm onCreateBlog={handleCreateBlog} />
+        </Togglable>
       </div>
 
-      <Blogs blogs={filteredBlogs} />
+      <Blogs blogs={filteredBlogs} onLike={handleLike} />
     </div>
   );
 }

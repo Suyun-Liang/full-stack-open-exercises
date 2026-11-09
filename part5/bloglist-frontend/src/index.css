@@ -5,7 +5,7 @@
   border-style: solid;
   border-radius: 5px;
   padding: 4px;
-  margin-bottom: 6px;
+  margin-bottom: 5px;
 }
 
 .error {
@@ -15,5 +15,12 @@
   border-style: solid;
   border-radius: 5px;
   padding: 4px;
-  margin-bottom: 6px;
+  margin-bottom: 5px;
+}
+
+.blogContainer {
+  border: 1.5px solid black;
+  padding-top: 10px;
+  padding-left: 2px;
+  margin-bottom: 5px;
 }
