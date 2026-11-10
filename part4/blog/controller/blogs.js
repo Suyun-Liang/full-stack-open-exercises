@@ -13,7 +13,10 @@ blogRouter.get("/", async (request, response) => {
 });
 
 blogRouter.get("/:id", async (request, response) => {
-  const blogs = await Blog.findById(request.params.id);
+  const blogs = await Blog.findById(request.params.id).populate("user", {
+    username: 1,
+    name: 1,
+  });
   if (blogs) {
     response.json(blogs);
   } else {
@@ -27,6 +30,7 @@ blogRouter.post("/", middleware.userExtractor, async (request, response) => {
   const blog = new Blog({ ...request.body, user: user._id });
 
   const result = await blog.save();
+  await result.populate("user", { username: 1, name: 1 });
   user.blogs = user.blogs.concat(result._id);
   await user.save();
   response.status(201).json(result);
@@ -92,7 +96,7 @@ blogRouter.put("/:id", middleware.userExtractor, async (request, response) => {
   blog.url = url;
 
   const updatedBlog = await blog.save();
-
+  await updatedBlog.populate("user", { username: 1, name: 1 });
   response.json(updatedBlog);
 });
 
@@ -115,6 +119,7 @@ blogRouter.put(
     }
 
     const updatedBlog = await blog.save();
+    await updatedBlog.populate("user", { username: 1, name: 1 });
     response.status(200).json(updatedBlog);
   },
 );
@@ -136,6 +141,7 @@ blogRouter.delete(
     blog.likes = blog.likes.filter((userId) => userId.toString() !== user.id);
 
     const updatedBlog = await blog.save();
+    await updatedBlog.populate("user", { username: 1, name: 1 });
     response.status(200).json(updatedBlog);
   },
 );

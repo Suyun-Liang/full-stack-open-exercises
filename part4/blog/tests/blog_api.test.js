@@ -59,15 +59,25 @@ describe("GET /api/blogs", () => {
 });
 
 describe("GET /api/blogs/:id", () => {
-  test("returns a blog with a valid existing id ", async () => {
+  test("returns a blog with a valid existing id", async () => {
     const blogsAtStart = await testHelper.blogsInDB();
     const blog = blogsAtStart[0];
+
     const res = await api
       .get(`/api/blogs/${blog.id}`)
       .expect(200)
       .expect("Content-Type", /application\/json/);
 
-    assert.deepStrictEqual(res.body, blog);
+    assert.strictEqual(res.body.id, blog.id);
+    assert.strictEqual(res.body.title, blog.title);
+    assert.strictEqual(res.body.author, blog.author);
+    assert.strictEqual(res.body.url, blog.url);
+    assert.deepStrictEqual(res.body.likes, blog.likes);
+
+    // Check populated user
+    assert.strictEqual(res.body.user.id, blog.user.toString());
+    assert.strictEqual(res.body.user.username, user.username);
+    assert.strictEqual(res.body.user.name, user.name);
   });
   test("returns 404 when the blog does not exist", async () => {
     // valid id, but not exist in db
