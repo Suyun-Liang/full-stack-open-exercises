@@ -31,4 +31,23 @@ async function update(blogId, updateBlog) {
   return response.data;
 }
 
-export default { getAll, setToken, create, update };
+async function likeBlog(blogId) {
+  const config = {
+    headers: { Authorization: token },
+  };
+  const response = await axios.put(
+    `${baseUrl}/${blogId}/likes/me`,
+    undefined,
+    config,
+  );
+  return response.data;
+}
+async function unlikeBlog(blogId) {
+  const config = {
+    headers: { Authorization: token },
+  };
+  const response = await axios.delete(`${baseUrl}/${blogId}/likes/me`, config);
+  return response.data;
+}
+
+export default { getAll, setToken, create, update, likeBlog, unlikeBlog };

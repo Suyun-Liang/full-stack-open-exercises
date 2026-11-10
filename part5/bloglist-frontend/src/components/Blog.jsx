@@ -1,10 +1,11 @@
 import { useState } from "react";
 
-const Blog = ({ blog, onLike }) => {
+const Blog = ({ blog, onToggleLike, userId }) => {
   const [visible, setVisible] = useState(false);
+  const userLikeBlog = blog.likes.includes(userId);
 
   function handleLikeClick() {
-    onLike(blog);
+    onToggleLike(blog, userLikeBlog);
   }
   return (
     <div className="blogContainer">
@@ -20,7 +21,10 @@ const Blog = ({ blog, onLike }) => {
         <div>
           <p>{blog.url}</p>
           <p>
-            {blog.likes} <button onClick={handleLikeClick}>likes</button>
+            {blog.likes.length}{" "}
+            <button onClick={handleLikeClick}>
+              {!userLikeBlog ? "like" : "unlike"}
+            </button>
           </p>
           <p>{blog.user?.name}</p>
         </div>

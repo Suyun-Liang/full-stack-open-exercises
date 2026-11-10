@@ -13,10 +13,6 @@ function App() {
   // type:"success"|"error"
   const [notification, setNotification] = useState({ type: "", message: "" });
 
-  const filteredBlogs = !user
-    ? null
-    : blogs.filter((blog) => blog.user?.username === user.username);
-
   // get blogs
   useEffect(() => {
     async function fetchBlogs() {
@@ -59,7 +55,6 @@ function App() {
         type: "error",
         message: error.response?.data?.error || "Login failed",
       });
-      throw error;
     }
   }
 
@@ -71,9 +66,8 @@ function App() {
 
   async function handleCreateBlog({ title, author, url }) {
     try {
-      await blogService.create({ title, author, url });
-      const blogs = await blogService.getAll();
-      setBlogs(blogs);
+      const newBlog = await blogService.create({ title, author, url });
+      setBlogs((prevBlogs) => [...prevBlogs, newBlog]);
       setNotification({
         type: "success",
         message: `A new blog: ${title} by ${author} added`,
@@ -84,30 +78,28 @@ function App() {
         type: "error",
         message: error.response?.data?.error || "Create blog failed",
       });
-      throw error;
     }
   }
 
-  async function handleLike(blog) {
+  async function handleToggleLike(blog, userLikeBlog) {
     try {
-      const updateBlog = {
-        title: blog.title,
-        author: blog.author,
-        url: blog.url,
-        likes: blog.likes + 1,
-        user: user?.id,
-      };
-
-      await blogService.update(blog.id, updateBlog);
-      const newBlogs = await blogService.getAll();
-      setBlogs(newBlogs);
+      let updatedBlog;
+      if (!userLikeBlog) {
+        updatedBlog = await blogService.likeBlog(blog.id);
+      } else {
+        updatedBlog = await blogService.unlikeBlog(blog.id);
+      }
+      setBlogs((prevBlogs) =>
+        prevBlogs.map((blog) =>
+          blog.id === updatedBlog.id ? updatedBlog : blog,
+        ),
+      );
     } catch (error) {
       console.log(error.response);
       setNotification({
         type: "error",
         message: error.response?.data?.error || "update Like failed",
       });
-      throw error;
     }
   }
 
@@ -135,7 +127,7 @@ function App() {
         </Togglable>
       </div>
 
-      <Blogs blogs={filteredBlogs} onLike={handleLike} />
+      <Blogs blogs={blogs} onToggleLike={handleToggleLike} userId={user.id} />
     </div>
   );
 }
