@@ -11,13 +11,14 @@ const jwt = require("jsonwebtoken");
 
 const api = supertest(app);
 let token;
+let user;
 
 beforeEach(async () => {
   await Blog.deleteMany({});
   await User.deleteMany({});
 
   const passwordHash = await bcrypt.hash("secrete", 10);
-  const user = new User({
+  user = new User({
     username: "root",
     name: "Amanda",
     passwordHash,
@@ -88,7 +89,6 @@ describe("POST /api/blogs", () => {
       title: "ttssssssttt",
       author: "Edsger W. Dijkstra",
       url: "https://homepages.cwi.nl/~storm/teaching/reader/Dijkstra68.pdf",
-      likes: 5,
     };
 
     await api
@@ -129,22 +129,6 @@ describe("POST /api/blogs", () => {
         .set("Authorization", "Bearer invalid-token")
         .send(newBlog)
         .expect(401);
-    });
-
-    test("defaults likes to 0 when omitted", async () => {
-      const newBlog = {
-        title: "belloooo",
-        author: "Edsger W. Dijkstra",
-        url: "https://homepages.cwi.nl/~storm/teaching/reader/Dijkstra68.pdf",
-      };
-
-      const res = await api
-        .post("/api/blogs")
-        .set("Authorization", `Bearer ${token}`)
-        .send(newBlog)
-        .expect(201)
-        .expect("Content-Type", /application\/json/);
-      assert.strictEqual(res.body.likes, 0);
     });
 
     test("returns 400 when title is missing", async () => {
@@ -199,7 +183,6 @@ describe("DELETE /api/blogs/:id", () => {
 
   test("returns 401 when token is missing", async () => {
     const blogsAtStart = await testHelper.blogsInDB();
-
     await api.delete(`/api/blogs/${blogsAtStart[0].id}`).expect(401);
   });
 
@@ -237,10 +220,9 @@ describe("PUT /api/blogs/:id", () => {
     const blogToUpdate = blogsAtStart[0];
 
     const updatedData = {
-      title: blogToUpdate.title,
+      title: "New Title",
       author: blogToUpdate.author,
       url: blogToUpdate.url,
-      likes: blogToUpdate.likes + 1,
     };
 
     const response = await api
@@ -250,12 +232,12 @@ describe("PUT /api/blogs/:id", () => {
       .expect(200)
       .expect("Content-Type", /application\/json/);
 
-    assert.strictEqual(response.body.likes, updatedData.likes);
+    assert.strictEqual(response.body.title, updatedData.title);
 
     const blogsAtEnd = await testHelper.blogsInDB();
     const updatedBlog = blogsAtEnd.find((blog) => blog.id === blogToUpdate.id);
 
-    assert.strictEqual(updatedBlog.likes, updatedData.likes);
+    assert.strictEqual(updatedBlog.title, updatedData.title);
   });
 
   test("returns 400 when required fields are missing", async () => {
@@ -265,7 +247,7 @@ describe("PUT /api/blogs/:id", () => {
     await api
       .put(`/api/blogs/${blogToUpdate.id}`)
       .set("Authorization", `Bearer ${token}`)
-      .send({ likes: blogToUpdate.likes + 1 })
+      .send({ title: "New Title" })
       .expect(400);
   });
 
@@ -274,10 +256,9 @@ describe("PUT /api/blogs/:id", () => {
     const blogToUpdate = blogsAtStart[0];
 
     const updatedData = {
-      title: blogToUpdate.title,
+      title: "New Title",
       author: blogToUpdate.author,
       url: blogToUpdate.url,
-      likes: blogToUpdate.likes + 1,
     };
 
     await api
@@ -291,10 +272,9 @@ describe("PUT /api/blogs/:id", () => {
     const blogToUpdate = blogsAtStart[0];
 
     const updatedData = {
-      title: blogToUpdate.title,
+      title: "New Title",
       author: blogToUpdate.author,
       url: blogToUpdate.url,
-      likes: blogToUpdate.likes + 1,
     };
 
     const passwordHash = await bcrypt.hash("secrete", 10);
@@ -321,6 +301,153 @@ describe("PUT /api/blogs/:id", () => {
     assert.deepStrictEqual(blogsAtStart, blogsAtEnd);
   });
 });
+
+describe("PUT /api/blogs/:id/likes/me", () => {
+  test("like a blog with a existing user", async () => {
+    const blogsAtStart = await testHelper.blogsInDB();
+    const blogToLike = blogsAtStart[0];
+
+    const res = await api
+      .put(`/api/blogs/${blogToLike.id}/likes/me`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200)
+      .expect("Content-Type", /application\/json/);
+    assert(res.body.likes.some((id) => id.toString() === user._id.toString()));
+    assert.strictEqual(res.body.likes.length, blogToLike.likes.length + 1);
+
+    const blogsAtEnd = await testHelper.blogsInDB();
+    const updatedBlog = blogsAtEnd.find((blog) => blog.id === blogToLike.id);
+    assert(
+      updatedBlog.likes.some((id) => id.toString() === user._id.toString()),
+    );
+    assert.strictEqual(updatedBlog.likes.length, res.body.likes.length);
+  });
+
+  test("liking a blog twice does not increase the like count twice", async () => {
+    const blogsAtStart = await testHelper.blogsInDB();
+    const blogToLike = blogsAtStart[0];
+
+    await api
+      .put(`/api/blogs/${blogToLike.id}/likes/me`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200)
+      .expect("Content-Type", /application\/json/);
+
+    const res = await api
+      .put(`/api/blogs/${blogToLike.id}/likes/me`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200)
+      .expect("Content-Type", /application\/json/);
+    assert(res.body.likes.some((id) => id.toString() === user._id.toString()));
+    assert.strictEqual(res.body.likes.length, blogToLike.likes.length + 1);
+
+    const blogsAtEnd = await testHelper.blogsInDB();
+    const updatedBlog = blogsAtEnd.find((blog) => blog.id === blogToLike.id);
+    assert(
+      updatedBlog.likes.some((id) => id.toString() === user._id.toString()),
+    );
+    assert.strictEqual(updatedBlog.likes.length, res.body.likes.length);
+  });
+
+  test("returns 404 when blog does not exist", async () => {
+    const nonExistingId = await testHelper.nonExistingId();
+    await api
+      .put(`/api/blogs/${nonExistingId}/likes/me`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(404)
+      .expect("Content-Type", /application\/json/);
+  });
+
+  test("returns 401 when token is missing", async () => {
+    const blogsAtStart = await testHelper.blogsInDB();
+    const blogToLike = blogsAtStart[0];
+    await api
+      .put(`/api/blogs/${blogToLike.id}/likes/me`)
+      .expect(401)
+      .expect("Content-Type", /application\/json/);
+  });
+});
+
+describe("DELETE /api/blogs/:id/likes/me", () => {
+  test("unlike a blog with a existing user", async () => {
+    const blogsAtStart = await testHelper.blogsInDB();
+    const blogToLike = blogsAtStart[0];
+
+    await api
+      .put(`/api/blogs/${blogToLike.id}/likes/me`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200)
+      .expect("Content-Type", /application\/json/);
+
+    const res = await api
+      .delete(`/api/blogs/${blogToLike.id}/likes/me`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200)
+      .expect("Content-Type", /application\/json/);
+    assert(!res.body.likes.some((id) => id.toString() === user._id.toString()));
+    assert.strictEqual(res.body.likes.length, blogToLike.likes.length);
+
+    const blogsAtEnd = await testHelper.blogsInDB();
+    const updatedBlog = blogsAtEnd.find((blog) => blog.id === blogToLike.id);
+    assert.deepStrictEqual(updatedBlog.likes, res.body.likes);
+    assert.strictEqual(updatedBlog.likes.length, res.body.likes.length);
+  });
+
+  test("unlike a blog twice does not decrease the like count twice", async () => {
+    const blogsAtStart = await testHelper.blogsInDB();
+    const blogToLike = blogsAtStart[0];
+
+    await api
+      .put(`/api/blogs/${blogToLike.id}/likes/me`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200)
+      .expect("Content-Type", /application\/json/);
+
+    const resAfterFirstUnlike = await api
+      .delete(`/api/blogs/${blogToLike.id}/likes/me`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200)
+      .expect("Content-Type", /application\/json/);
+
+    const resAfterSecondUnlike = await api
+      .delete(`/api/blogs/${blogToLike.id}/likes/me`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200)
+      .expect("Content-Type", /application\/json/);
+    assert(
+      !resAfterSecondUnlike.body.likes.some(
+        (id) => id.toString() === user._id.toString(),
+      ),
+    );
+    assert.deepStrictEqual(
+      resAfterFirstUnlike.body.likes,
+      resAfterSecondUnlike.body.likes,
+    );
+
+    const blogsAtEnd = await testHelper.blogsInDB();
+    const updatedBlog = blogsAtEnd.find((blog) => blog.id === blogToLike.id);
+    assert.deepStrictEqual(updatedBlog.likes, resAfterSecondUnlike.body.likes);
+  });
+
+  test("returns 404 when blog does not exist", async () => {
+    const nonExistingId = await testHelper.nonExistingId();
+    await api
+      .delete(`/api/blogs/${nonExistingId}/likes/me`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(404)
+      .expect("Content-Type", /application\/json/);
+  });
+
+  test("returns 401 when token is missing", async () => {
+    const blogsAtStart = await testHelper.blogsInDB();
+    const blogToLike = blogsAtStart[0];
+    await api
+      .delete(`/api/blogs/${blogToLike.id}/likes/me`)
+      .expect(401)
+      .expect("Content-Type", /application\/json/);
+  });
+});
+
 after(async () => {
   await mongoose.connection.close();
 });

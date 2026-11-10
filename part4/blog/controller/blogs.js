@@ -58,9 +58,10 @@ blogRouter.delete(
   },
 );
 
+// edit the blog content
 blogRouter.put("/:id", middleware.userExtractor, async (request, response) => {
   const user = request.user;
-  const { title, author, url, likes } = request.body;
+  const { title, author, url } = request.body;
 
   const blog = await Blog.findById(request.params.id);
 
@@ -79,9 +80,7 @@ blogRouter.put("/:id", middleware.userExtractor, async (request, response) => {
   if (
     typeof title !== "string" ||
     typeof author !== "string" ||
-    typeof url !== "string" ||
-    !Number.isInteger(likes) ||
-    likes < 0
+    typeof url !== "string"
   ) {
     return response.status(400).json({
       error: "Invalid blog data",
@@ -91,11 +90,54 @@ blogRouter.put("/:id", middleware.userExtractor, async (request, response) => {
   blog.title = title;
   blog.author = author;
   blog.url = url;
-  blog.likes = likes;
 
   const updatedBlog = await blog.save();
 
   response.json(updatedBlog);
 });
+
+// like route: like on a blog
+blogRouter.put(
+  "/:id/likes/me",
+  middleware.userExtractor,
+  async (request, response) => {
+    const user = request.user;
+    const blogId = request.params.id;
+
+    // find if the blog exists
+    const blog = await Blog.findById(blogId);
+    if (!blog) {
+      return response.status(404).json({ error: "Blog not found" });
+    }
+
+    if (!blog.likes.some((userId) => userId.toString() === user.id)) {
+      blog.likes.push(user.id);
+    }
+
+    const updatedBlog = await blog.save();
+    response.status(200).json(updatedBlog);
+  },
+);
+
+// like route: delete like on a blog
+blogRouter.delete(
+  "/:id/likes/me",
+  middleware.userExtractor,
+  async (request, response) => {
+    const user = request.user;
+    const blogId = request.params.id;
+
+    // find if the blog exists
+    const blog = await Blog.findById(blogId);
+    if (!blog) {
+      return response.status(404).json({ error: "Blog not found" });
+    }
+
+    blog.likes = blog.likes.filter((userId) => userId.toString() !== user.id);
+
+    const updatedBlog = await blog.save();
+    response.status(200).json(updatedBlog);
+  },
+);
 
 module.exports = blogRouter;

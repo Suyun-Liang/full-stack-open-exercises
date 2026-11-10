@@ -1,9 +1,8 @@
 POST http://localhost:3003/api/blogs
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhZWE1OTI1NDNhNTAwOGMwOTMyYzkzNCIsInVzZXJuYW1lIjoiYW1hbmRhIiwiaWF0IjoxNzkzODIxODY0fQ.QoNv40A98jXak0Ze4WZtShKBuximY3G2Xw5Am5MMDwk
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhZWE1OTQyNDNhNTAwOGMwOTMyYzkzNSIsInVzZXJuYW1lIjoiSmltIiwiaWF0IjoxNzk0MzM0OTg2LCJleHAiOjE3OTQzMzg1ODZ9.q4wPnPPCx6jDqvv0T8j3P6ciFLgaa7ro3y1QVXA7T6k
 
-{   "title": "amanda!",
-    "author": "piggy",
-    "url": "https://homepages.cwi.nl/~storm/teaching/reader/Dijkstra68.pdf",
-    "likes": 5
+{    "title": "Type wars",
+    "author": "Robert C. Martin",
+    "url": "http://blog.cleancoder.com/uncle-bob/2016/05/01/TypeWars.html"
 }
