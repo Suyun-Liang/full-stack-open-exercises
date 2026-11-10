@@ -12,6 +12,9 @@ function App() {
   const [user, setUser] = useState(null);
   // type:"success"|"error"
   const [notification, setNotification] = useState({ type: "", message: "" });
+  const sortedBlogs = [...blogs].sort(
+    (a, b) => b.likes.length - a.likes.length,
+  );
 
   // get blogs
   useEffect(() => {
@@ -81,13 +84,13 @@ function App() {
     }
   }
 
-  async function handleToggleLike(blog, userLikeBlog) {
+  async function handleToggleLike(blogId, userLikeBlog) {
     try {
       let updatedBlog;
       if (!userLikeBlog) {
-        updatedBlog = await blogService.likeBlog(blog.id);
+        updatedBlog = await blogService.likeBlog(blogId);
       } else {
-        updatedBlog = await blogService.unlikeBlog(blog.id);
+        updatedBlog = await blogService.unlikeBlog(blogId);
       }
       setBlogs((prevBlogs) =>
         prevBlogs.map((blog) =>
@@ -99,6 +102,19 @@ function App() {
       setNotification({
         type: "error",
         message: error.response?.data?.error || "update Like failed",
+      });
+    }
+  }
+
+  async function handleDeleteBlog(blogId) {
+    try {
+      await blogService.deleteBlog(blogId);
+      setBlogs((prevBlogs) => prevBlogs.filter((blog) => blog.id !== blogId));
+    } catch (error) {
+      console.log(error.response);
+      setNotification({
+        type: "error",
+        message: error.response?.data?.error || "delete blog failed",
       });
     }
   }
@@ -127,7 +143,12 @@ function App() {
         </Togglable>
       </div>
 
-      <Blogs blogs={blogs} onToggleLike={handleToggleLike} userId={user.id} />
+      <Blogs
+        blogs={sortedBlogs}
+        onToggleLike={handleToggleLike}
+        currentUserId={user.id}
+        onDeleteBlog={handleDeleteBlog}
+      />
     </div>
   );
 }

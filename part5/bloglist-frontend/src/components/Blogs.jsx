@@ -1,5 +1,5 @@
 import Blog from "./Blog";
-function Blogs({ blogs, onToggleLike, userId }) {
+function Blogs({ blogs, onToggleLike, currentUserId, onDeleteBlog }) {
   return (
     <div>
       {blogs.map((blog) => (
@@ -7,7 +7,8 @@ function Blogs({ blogs, onToggleLike, userId }) {
           key={blog.id}
           blog={blog}
           onToggleLike={onToggleLike}
-          userId={userId}
+          currentUserId={currentUserId}
+          onDeleteBlog={onDeleteBlog}
         />
       ))}
     </div>

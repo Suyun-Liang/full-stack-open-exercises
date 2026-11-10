@@ -1,11 +1,20 @@
 import { useState } from "react";
 
-const Blog = ({ blog, onToggleLike, userId }) => {
-  const [visible, setVisible] = useState(false);
-  const userLikeBlog = blog.likes.includes(userId);
+const Blog = ({ blog, onToggleLike, currentUserId, onDeleteBlog }) => {
+  const [visible, setVisible] = useState(true);
+  const userLikeBlog = blog.likes.includes(currentUserId);
+  const canCurrentUserDeleteBlog = blog.user.id === currentUserId;
 
   function handleLikeClick() {
-    onToggleLike(blog, userLikeBlog);
+    onToggleLike(blog.id, userLikeBlog);
+  }
+
+  function handleDeleteClick() {
+    const isConfirmed = window.confirm(
+      `Remove blog ${blog.title} by ${blog.author}`,
+    );
+    if (!isConfirmed) return;
+    onDeleteBlog(blog.id);
   }
   return (
     <div className="blogContainer">
@@ -27,6 +36,9 @@ const Blog = ({ blog, onToggleLike, userId }) => {
             </button>
           </p>
           <p>{blog.user?.name}</p>
+          {canCurrentUserDeleteBlog && (
+            <button onClick={handleDeleteClick}>delete</button>
+          )}
         </div>
       )}
     </div>
