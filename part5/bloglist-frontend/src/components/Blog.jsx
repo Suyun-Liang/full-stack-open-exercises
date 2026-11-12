@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 const Blog = ({ blog, onToggleLike, currentUserId, onDeleteBlog }) => {
-  const [visible, setVisible] = useState(true);
+  const [visible, setVisible] = useState(false);
   const userLikeBlog = blog.likes.includes(currentUserId);
   const canCurrentUserDeleteBlog = blog.user.id === currentUserId;
 
@@ -30,7 +30,7 @@ const Blog = ({ blog, onToggleLike, currentUserId, onDeleteBlog }) => {
         <div>
           <p>{blog.url}</p>
           <p>
-            {blog.likes.length}{" "}
+            <span>{blog.likes.length}</span>
             <button onClick={handleLikeClick}>
               {!userLikeBlog ? "like" : "unlike"}
             </button>
