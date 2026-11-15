@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import Blog from "../components/Blog";
 import userEvent from "@testing-library/user-event";
-import { expect, test, vi } from "vitest";
+
 const blog = {
   id: "5a422a851b54a676234d17f7",
   title: "React patterns",
@@ -47,4 +47,24 @@ test("shows blog URL and likes after clicking view", async () => {
 
   expect(screen.getByText("0")).toBeVisible();
   expect(screen.getByText("https://reactpatterns.com/")).toBeVisible();
+});
+
+test("like eventHandler called twice after clicking twice", async () => {
+  const mockHandler = vi.fn();
+  render(
+    <Blog
+      blog={blog}
+      currentUserId="6aea45c7c3493bfff9977be9"
+      onToggleLike={mockHandler}
+    />,
+  );
+
+  const user = userEvent.setup();
+  const viewButton = screen.getByText("view");
+  await user.click(viewButton);
+  const likeButton = screen.getByText("like");
+  await user.click(likeButton);
+  await user.click(likeButton);
+
+  expect(mockHandler.mock.calls).toHaveLength(2);
 });

@@ -13,6 +13,11 @@ export default defineConfig({
     },
   },
   test: {
+    coverage: {
+      provider: "v8",
+      include: ["src/**/*.{js,jsx}"],
+      exclude: ["src/**/*.test.{js,jsx}"],
+    },
     environment: "jsdom",
     globals: true,
     setupFiles: "./testSetup.js",
