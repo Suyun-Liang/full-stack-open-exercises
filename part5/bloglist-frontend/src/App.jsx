@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import blogService from "./services/blogs";
 import loginService from "./services/login";
 import Notification from "./components/Notification";
@@ -15,6 +15,7 @@ function App() {
   const sortedBlogs = [...blogs].sort(
     (a, b) => b.likes.length - a.likes.length,
   );
+  const blogFormRef = useRef();
 
   // get blogs
   useEffect(() => {
@@ -69,6 +70,7 @@ function App() {
 
   async function handleCreateBlog({ title, author, url }) {
     try {
+      blogFormRef.current.toggleVisibility();
       const newBlog = await blogService.create({ title, author, url });
       setBlogs((prevBlogs) => [...prevBlogs, newBlog]);
       setNotification({
@@ -134,11 +136,12 @@ function App() {
       <h2>blogs</h2>
       <Notification notification={notification} />
       <p>
-        {user.name} logged in <button onClick={handleLogout}>log out</button>
+        <span>{user.name} logged in</span>
+        <button onClick={handleLogout}>log out</button>
       </p>
       <div>
         <h2>create new</h2>
-        <Togglable buttonLabel="create new blog">
+        <Togglable buttonLabel="create new blog" ref={blogFormRef}>
           <BlogForm onCreateBlog={handleCreateBlog} />
         </Togglable>
       </div>
