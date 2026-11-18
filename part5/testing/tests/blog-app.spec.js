@@ -3,15 +3,15 @@ const { loginWith, createBlog } = require("./helper");
 
 describe("Blog app", () => {
   beforeEach(async ({ page, request }) => {
-    await request.post("http://localhost:3003/api/testing/reset");
-    await request.post("http://localhost:3003/api/users", {
+    await request.post("/api/testing/reset");
+    await request.post("/api/users", {
       data: {
         name: "Matti Luukkainen",
         username: "mluukkai",
         password: "1998",
       },
     });
-    await page.goto("http://localhost:5173/");
+    await page.goto("/");
   });
 
   test("Login form is shown", async ({ page }) => {
@@ -97,6 +97,76 @@ describe("Blog app", () => {
         await page.getByRole("button", { name: "view" }).click();
         await expect(page.getByRole("button", { name: "delete" })).toHaveCount(
           0,
+        );
+      });
+    });
+
+    describe("several blogs exist", () => {
+      beforeEach(async ({ page, request }) => {
+        const response = await request.post("/api/users", {
+          data: {
+            username: "user1",
+            name: "User One",
+            password: "password",
+          },
+        });
+        const user1 = await response.json();
+        const response2 = await request.post("/api/users", {
+          data: {
+            username: "user2",
+            name: "User Two",
+            password: "password",
+          },
+        });
+        const user2 = await response2.json();
+        const response3 = await request.post("/api/users", {
+          data: {
+            username: "user3",
+            name: "User Three",
+            password: "password",
+          },
+        });
+        const user3 = await response3.json();
+
+        await request.post("/api/testing/blogs", {
+          data: {
+            title: "Go To Statement Considered Harmful",
+            author: "Edsger W. Dijkstra",
+            url: "http://www.u.arizona.edu/~rubinson/copyright_violations/Go_To_Considered_Harmful.html",
+            likes: [],
+            user: user1.id,
+          },
+        });
+        await request.post("/api/testing/blogs", {
+          data: {
+            title: "Canonical string reduction",
+            author: "Edsger W. Dijkstra",
+            url: "http://www.cs.utexas.edu/~EWD/transcriptions/EWD08xx/EWD808.html",
+            likes: [user1.id, user3.id],
+            user: user1.id,
+          },
+        });
+        await request.post("/api/testing/blogs", {
+          data: {
+            title: "First class tests",
+            author: "Robert C. Martin",
+            url: "http://blog.cleancoder.com/uncle-bob/2017/05/05/TestDefinitions.htmll",
+            likes: [user3.id, user1.id, user2.id],
+            user: user2.id,
+          },
+        });
+      });
+
+      test("blogs are arranged in the order according to the likes", async ({
+        page,
+      }) => {
+        await page.reload();
+        const blogs = page.locator(".blogContainer");
+        await expect(blogs).toHaveCount(3);
+        await expect(blogs.nth(0)).toContainText("First class tests");
+        await expect(blogs.nth(1)).toContainText("Canonical string reduction");
+        await expect(blogs.nth(2)).toContainText(
+          "Go To Statement Considered Harmful",
         );
       });
     });
