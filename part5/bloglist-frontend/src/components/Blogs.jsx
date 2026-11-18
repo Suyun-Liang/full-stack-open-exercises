@@ -1,17 +1,13 @@
-import Blog from "./Blog";
-function Blogs({ blogs, onToggleLike, currentUserId, onDeleteBlog }) {
+import { Link } from "react-router-dom";
+function Blogs({ blogs }) {
   return (
-    <div>
+    <ul>
       {blogs.map((blog) => (
-        <Blog
-          key={blog.id}
-          blog={blog}
-          onToggleLike={onToggleLike}
-          currentUserId={currentUserId}
-          onDeleteBlog={onDeleteBlog}
-        />
+        <li key={blog.id}>
+          <Link to={`/blogs/${blog.id}`}>{blog.title}</Link>
+        </li>
       ))}
-    </div>
+    </ul>
   );
 }
 

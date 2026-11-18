@@ -14,7 +14,10 @@ async function getAll() {
   const response = await axios.get(baseUrl);
   return response.data;
 }
-
+async function getById(id) {
+  const response = await axios.get(`${baseUrl}/${id}`);
+  return response.data;
+}
 async function create(blog) {
   const config = {
     headers: { Authorization: token },
@@ -60,6 +63,7 @@ async function deleteBlog(blogId) {
 
 export default {
   getAll,
+  getById,
   setToken,
   create,
   update,
