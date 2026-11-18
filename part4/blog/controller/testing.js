@@ -9,4 +9,11 @@ testingRouter.post("/reset", async (request, response) => {
   response.status(204).end();
 });
 
+testingRouter.post("/blogs", async (request, response) => {
+  const blog = new Blog(request.body);
+  const savedBlog = await blog.save();
+
+  response.status(201).json(savedBlog);
+});
+
 module.exports = testingRouter;
