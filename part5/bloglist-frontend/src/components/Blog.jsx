@@ -46,7 +46,7 @@ const Blog = ({ onToggleLike, currentUserId, onDeleteBlog }) => {
     <div className="blogContainer">
       <div>
         <h2>
-          {blog.title} {blog.author}
+          {blog.author}: {blog.title}
         </h2>
       </div>
       <div>
