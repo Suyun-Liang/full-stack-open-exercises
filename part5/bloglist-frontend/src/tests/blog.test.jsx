@@ -40,7 +40,7 @@ test("unauthenticated users can view blog information but not buttons", async ()
       </Routes>
     </MemoryRouter>,
   );
-  // 5. Wait for the blog to load
+  // 4. Wait for the blog to load
   expect(
     await screen.findByText("Michael Chan: React patterns"),
   ).toBeInTheDocument();
@@ -54,56 +54,80 @@ test("unauthenticated users can view blog information but not buttons", async ()
   expect(blogService.getById).toHaveBeenCalledWith("123");
 });
 
-//  test("renders the blog's title and author", () => {
-//   render(<Blog blog={blog} />);
-//   const element = screen.getByText("React patterns Michael Chan");
-//   expect(element).toBeVisible();
-//   expect(screen.queryByText("0")).not.toBeInTheDocument();
-//   expect(
-//     screen.queryByText("https://reactpatterns.com/"),
-//   ).not.toBeInTheDocument();
-// });
+test("authenticated users who are not the creator are shown only the like button", async () => {
+  const blog = {
+    id: "123",
+    title: "React patterns",
+    author: "Michael Chan",
+    url: "https://reactpatterns.com/",
+    likes: ["user1", "user2"],
+    user: {
+      id: "user1",
+      username: "mykyta",
+      name: "xieyou",
+    },
+  };
+  blogService.getById.mockResolvedValue(blog);
+  render(
+    <MemoryRouter initialEntries={["/blogs/123"]}>
+      <Routes>
+        <Route
+          path="/blogs/:id"
+          element={
+            <Blog
+              currentUserId={"user3"}
+              onToggleLike={vi.fn()}
+              onDeleteBlog={vi.fn()}
+            />
+          }
+        />
+      </Routes>
+    </MemoryRouter>,
+  );
+  expect(
+    await screen.findByRole("button", { name: "like" }),
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: "delete" }),
+  ).not.toBeInTheDocument();
+});
 
-// test("shows blog URL and likes after clicking view", async () => {
-//   const mockHandler = vi.fn();
-//   render(
-//     <Blog
-//       blog={blog}
-//       currentUserId="6aea45c7c3493bfff9977be9"
-//       onToggleLike={mockHandler}
-//     />,
-//   );
+test("the blog’s creator is also shown the delete button", async () => {
+  const blog = {
+    id: "123",
+    title: "React patterns",
+    author: "Michael Chan",
+    url: "https://reactpatterns.com/",
+    likes: ["user1", "user2"],
+    user: {
+      id: "user1",
+      username: "mykyta",
+      name: "xieyou",
+    },
+  };
+  blogService.getById.mockResolvedValue(blog);
 
-//   const user = userEvent.setup();
+  render(
+    <MemoryRouter initialEntries={["/blogs/123"]}>
+      <Routes>
+        <Route
+          path="/blogs/:id"
+          element={
+            <Blog
+              currentUserId={"user1"}
+              onToggleLike={vi.fn()}
+              onDeleteBlog={vi.fn()}
+            />
+          }
+        />
+      </Routes>
+    </MemoryRouter>,
+  );
 
-//   expect(screen.queryByText("0")).not.toBeInTheDocument();
-//   expect(
-//     screen.queryByText("https://reactpatterns.com/"),
-//   ).not.toBeInTheDocument();
-
-//   const viewButton = screen.getByText("view");
-//   await user.click(viewButton);
-
-//   expect(screen.getByText("0")).toBeVisible();
-//   expect(screen.getByText("https://reactpatterns.com/")).toBeVisible();
-// });
-
-// test("like eventHandler called twice after clicking twice", async () => {
-//   const mockHandler = vi.fn();
-//   render(
-//     <Blog
-//       blog={blog}
-//       currentUserId="6aea45c7c3493bfff9977be9"
-//       onToggleLike={mockHandler}
-//     />,
-//   );
-
-//   const user = userEvent.setup();
-//   const viewButton = screen.getByText("view");
-//   await user.click(viewButton);
-//   const likeButton = screen.getByText("like");
-//   await user.click(likeButton);
-//   await user.click(likeButton);
-
-//   expect(mockHandler.mock.calls).toHaveLength(2);
-// });
+  expect(
+    await screen.findByRole("button", { name: "unlike" }),
+  ).toBeInTheDocument();
+  expect(
+    await screen.findByRole("button", { name: "delete" }),
+  ).toBeInTheDocument();
+});
