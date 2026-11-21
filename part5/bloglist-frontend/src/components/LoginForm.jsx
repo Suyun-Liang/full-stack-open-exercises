@@ -1,10 +1,8 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 
 function LoginForm({ onLogin }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const navigate = useNavigate();
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -14,7 +12,6 @@ function LoginForm({ onLogin }) {
     }
 
     await onLogin({ username, password });
-    navigate("/");
     setUsername("");
     setPassword("");
   }

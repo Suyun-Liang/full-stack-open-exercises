@@ -53,6 +53,7 @@ function App() {
       window.localStorage.setItem("loggedBlogUser", JSON.stringify(user));
       blogService.setToken(user.token);
       setUser(user);
+      navigate("/");
     } catch (error) {
       console.log(error.response);
       setNotification({
