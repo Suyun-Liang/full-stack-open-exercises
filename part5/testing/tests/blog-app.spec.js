@@ -4,14 +4,15 @@ const { loginWith, createBlog } = require("./helper");
 describe("Blog app", () => {
   beforeEach(async ({ page, request }) => {
     await request.post("/api/testing/reset");
-    await request.post("/api/users", {
+    const res = await request.post("/api/users", {
       data: {
         name: "Matti Luukkainen",
         username: "mluukkai",
         password: "1998",
       },
     });
-    await page.goto("/");
+    await expect(res).toBeOK();
+    await page.goto("/login");
   });
 
   test("Login form is shown", async ({ page }) => {
@@ -22,16 +23,21 @@ describe("Blog app", () => {
   describe("Login", () => {
     test("succeeds with correct credentials", async ({ page }) => {
       await loginWith(page, "mluukkai", "1998");
-      await expect(page.getByText("Matti Luukkainen logged in")).toBeVisible();
+      await expect(page).toHaveURL("/");
+      await expect(page.getByRole("link", { name: "new blog" })).toBeVisible();
+      await expect(page.getByRole("button", { name: "log out" })).toBeVisible();
     });
 
     test("fails with wrong credentials", async ({ page }) => {
       await loginWith(page, "mluukkai", "wrong");
-
       const errorDiv = page.locator(".error");
+      await expect(errorDiv).toBeVisible();
       await expect(errorDiv).toContainText("invalid username or password");
-      await expect(errorDiv).toHaveCSS("color", "rgb(255, 0, 0)");
-      await expect(errorDiv).toHaveCSS("border-style", "solid");
+      await expect(page).toHaveURL("/login");
+      await expect(page.getByRole("button", { name: "log out" })).toHaveCount(
+        0,
+      );
+      await expect(page.getByRole("link", { name: "new blog" })).toHaveCount(0);
     });
   });
 
@@ -41,60 +47,82 @@ describe("Blog app", () => {
     });
 
     test("a new blog can be created", async ({ page }) => {
+      await page.getByRole("link", { name: "new blog" }).click();
+      await expect(page).toHaveURL("/create");
+      await expect(page.getByRole("button", { name: "create" })).toBeVisible();
       await createBlog(page, {
         title: "a note created by playwright",
         author: "Some one famous",
         url: "https://reactpatterns.com/",
       });
+      await expect(page).toHaveURL("/");
+      const successDiv = page.locator(".success");
+      await expect(successDiv).toBeVisible();
+      await expect(successDiv).toContainText(
+        "A new blog: a note created by playwright by Some one famous added",
+      );
       await expect(
-        page.getByText("a note created by playwright Some one famous"),
+        page.getByRole("link", { name: "a note created by playwright" }),
       ).toBeVisible();
+      await expect(page.getByRole("listitem")).toHaveCount(1);
     });
 
     describe("When a blog is added", () => {
       beforeEach(async ({ page }) => {
+        await page.getByRole("link", { name: "new blog" }).click();
         await createBlog(page, {
           title: "a note created by playwright",
           author: "Some one famous",
           url: "https://reactpatterns.com/",
         });
+        await expect(page).toHaveURL("/");
       });
 
       test("a blog can be liked", async ({ page }) => {
-        await page.getByRole("button", { name: "view" }).click();
-        await expect(page.getByText("0", { exact: true })).toBeVisible();
+        await page
+          .getByRole("link", { name: "a note created by playwright" })
+          .click();
+        await expect(page).toHaveURL(/\/blogs\/.+/);
+        await expect(page.getByText("likes: 0")).toBeVisible();
         await page.getByRole("button", { name: "like" }).click();
-        await expect(page.getByText("1", { exact: true })).toBeVisible();
+        await expect(page.getByText("likes: 1")).toBeVisible();
+        await expect(
+          page.getByRole("button", { name: "unlike" }),
+        ).toBeVisible();
       });
 
       test("a blog can be deleted", async ({ page }) => {
-        await page.getByRole("button", { name: "view" }).click();
+        await page
+          .getByRole("link", { name: "a note created by playwright" })
+          .click();
+        await expect(page).toHaveURL(/\/blogs\/.+/);
+        await expect(
+          page.getByRole("button", { name: "delete" }),
+        ).toBeVisible();
         page.once("dialog", (dialog) => dialog.accept());
         await page.getByRole("button", { name: "delete" }).click();
-        await expect(
-          page.getByText("a note created by playwright Some one famous"),
-        ).toHaveCount(0);
+        await expect(page).toHaveURL("/");
+        await expect(page.getByRole("listitem")).toHaveCount(0);
       });
 
-      test("only creator user can delete blog", async ({ page, request }) => {
+      test("a non-creator cannot see the delete button", async ({
+        page,
+        request,
+      }) => {
         await page.getByRole("button", { name: "log out" }).click();
-        await expect(page.getByLabel("username")).toBeVisible();
-        await expect(page.getByLabel("password")).toBeVisible();
-
-        await request.post("http://localhost:3003/api/users", {
+        await request.post("/api/users", {
           data: {
             name: "New User",
             username: "newuser",
             password: "1998",
           },
         });
-
+        await page.getByRole("link", { name: "login" }).click();
         await loginWith(page, "newuser", "1998");
-        await expect(page.getByText("New User logged in")).toBeVisible();
-        await expect(
-          page.getByText("a note created by playwright Some one famous"),
-        ).toBeVisible();
-        await page.getByRole("button", { name: "view" }).click();
+        await page
+          .getByRole("link", { name: "a note created by playwright" })
+          .click();
+        await expect(page.getByRole("button", { name: "like" })).toBeVisible();
         await expect(page.getByRole("button", { name: "delete" })).toHaveCount(
           0,
         );
@@ -102,7 +130,7 @@ describe("Blog app", () => {
     });
 
     describe("several blogs exist", () => {
-      beforeEach(async ({ page, request }) => {
+      beforeEach(async ({ request }) => {
         const response = await request.post("/api/users", {
           data: {
             username: "user1",
@@ -157,11 +185,11 @@ describe("Blog app", () => {
         });
       });
 
-      test("blogs are arranged in the order according to the likes", async ({
+      test("blogs are sorted by likes in descending order", async ({
         page,
       }) => {
         await page.reload();
-        const blogs = page.locator(".blogContainer");
+        const blogs = page.getByRole("listitem");
         await expect(blogs).toHaveCount(3);
         await expect(blogs.nth(0)).toContainText("First class tests");
         await expect(blogs.nth(1)).toContainText("Canonical string reduction");
