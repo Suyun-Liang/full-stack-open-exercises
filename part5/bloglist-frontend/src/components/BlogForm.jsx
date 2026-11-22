@@ -1,3 +1,4 @@
+import { Box, Button, TextField } from "@mui/material";
 import { useState } from "react";
 
 function BlogForm({ onCreateBlog }) {
@@ -18,25 +19,34 @@ function BlogForm({ onCreateBlog }) {
   }
   return (
     <form onSubmit={handleSubmit}>
-      <div>
-        <label>
-          title
-          <input value={title} onChange={(e) => setTitle(e.target.value)} />
-        </label>
-      </div>
-      <div>
-        <label>
-          author
-          <input value={author} onChange={(e) => setAuthor(e.target.value)} />
-        </label>
-        <div>
-          <label>
-            url
-            <input value={url} onChange={(e) => setUrl(e.target.value)} />
-          </label>
-        </div>
-      </div>
-      <button type="submit">create</button>
+      <Box sx={{ width: 380 }}>
+        <TextField
+          variant="outlined"
+          label="title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          fullWidth
+        />
+        <TextField
+          variant="outlined"
+          label="author"
+          value={author}
+          onChange={(e) => setAuthor(e.target.value)}
+          style={{ marginTop: 10 }}
+          fullWidth
+        />
+        <TextField
+          variant="outlined"
+          label="url"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          style={{ marginTop: 10 }}
+          fullWidth
+        />
+      </Box>
+      <Button type="submit" variant="contained" style={{ marginTop: 10 }}>
+        create
+      </Button>
     </form>
   );
 }

@@ -5,8 +5,10 @@ import Notification from "./components/Notification";
 import LoginForm from "./components/LoginForm";
 import BlogForm from "./components/BlogForm";
 import Blogs from "./components/Blogs";
-import { Link, Route, Routes, useMatch, useNavigate } from "react-router-dom";
+import { Link, Route, Routes, useNavigate } from "react-router-dom";
 import Blog from "./components/Blog";
+import { Container } from "@mui/material";
+import NavBar from "./components/NavBar";
 
 function App() {
   const [blogs, setBlogs] = useState([]);
@@ -129,57 +131,49 @@ function App() {
 
   return (
     <div>
-      <nav>
-        <Link to="/">blogs</Link>
-        {!user ? (
-          <Link to="/login">login</Link>
-        ) : (
-          <>
-            <Link to="/create">new blog</Link>
-            <button onClick={handleLogout}>log out</button>
-          </>
-        )}
-      </nav>
+      <NavBar user={user} onLogout={handleLogout} />
       <Notification notification={notification} />
-      <Routes>
-        <Route
-          path="/"
-          element={
-            <div>
-              <h2>blogs</h2>
-              <Blogs blogs={sortedBlogs} />
-            </div>
-          }
-        />
-        <Route
-          path="/login"
-          element={
-            <div>
-              <h2>Log in to application</h2>
-              <LoginForm onLogin={handleLogin} />
-            </div>
-          }
-        />
-        <Route
-          path="/blogs/:id"
-          element={
-            <Blog
-              onToggleLike={handleToggleLike}
-              currentUserId={user?.id}
-              onDeleteBlog={handleDeleteBlog}
-            />
-          }
-        />
-        <Route
-          path="/create"
-          element={
-            <div>
-              <h2>create new</h2>
-              <BlogForm onCreateBlog={handleCreateBlog} />
-            </div>
-          }
-        />
-      </Routes>
+      <Container disableGutters maxWidth="lg" sx={{ mt: 3 }}>
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <div>
+                <h2>blogs</h2>
+                <Blogs blogs={sortedBlogs} />
+              </div>
+            }
+          />
+          <Route
+            path="/login"
+            element={
+              <div>
+                <h2>Log in to application</h2>
+                <LoginForm onLogin={handleLogin} />
+              </div>
+            }
+          />
+          <Route
+            path="/blogs/:id"
+            element={
+              <Blog
+                onToggleLike={handleToggleLike}
+                currentUserId={user?.id}
+                onDeleteBlog={handleDeleteBlog}
+              />
+            }
+          />
+          <Route
+            path="/create"
+            element={
+              <div>
+                <h2>create new</h2>
+                <BlogForm onCreateBlog={handleCreateBlog} />
+              </div>
+            }
+          />
+        </Routes>
+      </Container>
     </div>
   );
 }

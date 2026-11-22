@@ -1,3 +1,4 @@
+import { TextField, Button } from "@mui/material";
 import { useState } from "react";
 
 function LoginForm({ onLogin }) {
@@ -18,24 +19,26 @@ function LoginForm({ onLogin }) {
   return (
     <form onSubmit={handleSubmit}>
       <div>
-        <label>
-          username
-          <input
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-          />
-        </label>
+        <TextField
+          label="username"
+          variant="standard"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+        />
       </div>
       <div>
-        <label>
-          password
-          <input
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </label>
+        <TextField
+          label="password"
+          variant="standard"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
       </div>
-      <button type="submit">login</button>
+      <div>
+        <Button type="submit" variant="contained" style={{ marginTop: 10 }}>
+          login
+        </Button>
+      </div>
     </form>
   );
 }

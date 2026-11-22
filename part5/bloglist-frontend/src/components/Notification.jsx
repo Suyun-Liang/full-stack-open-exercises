@@ -1,9 +1,14 @@
+import { Alert } from "@mui/material";
+
 function Notification({ notification }) {
   if (!notification.message) return;
   return (
-    <div className={`${notification.type}`}>
-      <p>{notification.message}</p>
-    </div>
+    <Alert
+      style={{ marginTop: 10, marginBottom: 10 }}
+      severity={`${notification.type}`}
+    >
+      {notification.message}
+    </Alert>
   );
 }
 
